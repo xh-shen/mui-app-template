@@ -1,0 +1,6 @@
+**/*.html
+/dist
+/build
+/config
+/node_modules
+/static

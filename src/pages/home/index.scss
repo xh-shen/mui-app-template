@@ -1,0 +1,14 @@
+@import '~@/assets/scss/index.scss';
+.container {
+  margin-top: 60px;
+  height: 100%;
+  text-align: center;
+  .logo {
+    margin-bottom: 50px;
+    height: 100px;
+  }
+  h1 {
+    font-size: 22px;
+    margin-bottom: 30px;
+  }
+}
