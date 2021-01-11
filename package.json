@@ -1,10 +1,16 @@
 {
   "name": "mui-app-template",
   "version": "1.0.0",
-  "main": "index.js",
   "sideEffects": [
     "*.css",
     "*.scss"
+  ],
+  "keywords": [
+    "mui",
+    "mui-webpack",
+    "webpack",
+    "webpack5",
+    "template"
   ],
   "repository": "https://github.com/xh-shen/mui-app-template.git",
   "author": "shenqz <9509394@qq.com>",
