@@ -2,19 +2,21 @@
  * @Author: shen
  * @Date: 2021-01-10 11:20:18
  * @LastEditors: shen
- * @LastEditTime: 2021-01-11 15:19:36
+ * @LastEditTime: 2021-01-15 08:39:59
  * @Description:
  */
 'use strict';
 
+const os = require('os')
 const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const HappyPack = require('happypack');//多进程打包
+const happyThreadPool = HappyPack.ThreadPool({ size: os.cpus().length });
 
 const postcssNormalize = require('postcss-normalize');
 
@@ -168,12 +170,7 @@ module.exports = async function (webpackEnv) {
             {
               test: /\.js$/,
               include: paths.appSrc,
-              loader: require.resolve('babel-loader'),
-              options: {
-                cacheDirectory: true,
-                cacheCompression: false,
-                compact: isEnvProduction,
-              },
+              use: 'happypack/loader?id=babel',
             },
             {
               test: cssRegex,
@@ -221,7 +218,7 @@ module.exports = async function (webpackEnv) {
             to: paths.appBuild + '/static',
             filter: async (resourcePath) => {
               const extname = path.extname(resourcePath);
-              // 不拷贝css和js文件，所以请谨慎使用，js和css文件会自动注入到html的脚本中
+              // 不拷贝css和js文件，所以请谨慎使用，js和css文件会通过add-asset-html-webpack-plugin插件自动注入到html中
               if(extname === '.css' || extname === '.js' || extname === '.ico') {
                 return false
               }
@@ -233,6 +230,20 @@ module.exports = async function (webpackEnv) {
             to: paths.appBuildManifestJson,
           },
         ],
+      }),
+      new HappyPack({
+        id: 'babel',
+        loaders: [
+          {
+            loader: 'babel-loader',
+            options: {
+              cacheDirectory: true,
+              cacheCompression: false,
+              compact: isEnvProduction,
+            }
+          }
+        ],
+        threadPool:happyThreadPool
       }),
       new webpack.DefinePlugin(env.stringified),
     ].filter(Boolean),
