@@ -1,11 +1,21 @@
 @import '~@/assets/scss/index.scss';
 .container {
-  margin-top: 60px;
+  padding-top: 60px;
   height: 100%;
   text-align: center;
+  box-sizing: border-box;
   .logo {
-    margin-bottom: 50px;
-    height: 100px;
+    &-small {
+      background-image: url('~@img/logo.png');
+      margin: 0 auto;
+      width: 100px;
+      height: 100px;
+      background-size: 100% 100%;
+    }
+    &-big {
+      margin-bottom: 50px;
+      height: 100px;
+    }
   }
   h1 {
     font-size: 22px;

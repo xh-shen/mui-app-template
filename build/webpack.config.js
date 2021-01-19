@@ -2,7 +2,7 @@
  * @Author: shen
  * @Date: 2021-01-10 11:20:18
  * @LastEditors: shen
- * @LastEditTime: 2021-01-15 08:39:59
+ * @LastEditTime: 2021-01-19 12:15:25
  * @Description:
  */
 'use strict';
@@ -11,10 +11,13 @@ const os = require('os')
 const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
+const ESLintPlugin = require('eslint-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HappyPack = require('happypack');//多进程打包
 const happyThreadPool = HappyPack.ThreadPool({ size: os.cpus().length });
 
@@ -134,6 +137,7 @@ module.exports = async function (webpackEnv) {
       extensions: paths.moduleFileExtensions.map((ext) => `.${ext}`),
       alias: {
         '@': paths.appSrc,
+        '@img': paths.appSrc + '/assets/images',
       },
     },
     module: {
@@ -141,21 +145,16 @@ module.exports = async function (webpackEnv) {
       rules: [
         { parser: { requireEnsure: false } },
         {
-          test: /\.js$/,
-          loader: 'eslint-loader',
-          enforce: 'pre',
-          include: [paths.appSrc],
-          options: {
-            formatter: require('eslint-friendly-formatter'),
-            emitWarning: true,
-          },
-        },
-        {
           oneOf: [
             {
               test: /\.(html)$/,
               use: {
                 loader: 'html-loader',
+                options: {
+                  attributes: {
+                    root: paths.publicPath,
+                  },
+                }
               },
             },
             {
@@ -206,7 +205,7 @@ module.exports = async function (webpackEnv) {
     plugins: [
       isEnvProduction && new CleanWebpackPlugin(),
       ...htmlPlugin,
-      addAssets(),
+      ...addAssets(),
       new MiniCssExtractPlugin({
         filename: isEnvProduction ? 'static/css/[name].[contenthash:8].css' : 'static/css/[name].css',
         chunkFilename: isEnvProduction ? 'static/css/[name].[contenthash:8].chunk.css' : 'static/css/[name].chunk.css',
@@ -218,8 +217,7 @@ module.exports = async function (webpackEnv) {
             to: paths.appBuild + '/static',
             filter: async (resourcePath) => {
               const extname = path.extname(resourcePath);
-              // 不拷贝css和js文件，所以请谨慎使用，js和css文件会通过add-asset-html-webpack-plugin插件自动注入到html中
-              if(extname === '.css' || extname === '.js' || extname === '.ico') {
+              if(extname === '.ico') {
                 return false
               }
               return true;
@@ -245,7 +243,28 @@ module.exports = async function (webpackEnv) {
         ],
         threadPool:happyThreadPool
       }),
+      isEnvDevelopment && new WebpackManifestPlugin({
+        fileName: 'asset-manifest.json',
+        publicPath: paths.publicPath,
+      }),
+      isEnvDevelopment && new CaseSensitivePathsPlugin(),
       new webpack.DefinePlugin(env.stringified),
+      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+      new ESLintPlugin({
+        // Plugin options
+        extensions: ['js'],
+        formatter: require.resolve('eslint-friendly-formatter'),
+        eslintPath: require.resolve('eslint'),
+        context: paths.appSrc,
+        cache: true,
+        cacheLocation: path.resolve(
+          paths.appNodeModules,
+          '.cache/.eslintcache'
+        ),
+        // ESLint class options
+        cwd: paths.appPath,
+        resolvePluginsRelativeTo: __dirname,
+      }),
     ].filter(Boolean),
   };
 };
